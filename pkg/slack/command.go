@@ -61,7 +61,7 @@ func SlashCmdEndpoint(c *gin.Context) {
 	handler := slashCommandLookup[cmd.Command]
 	if handler == nil {
 		e := errors.NewOperationError(cmd.Command, e.New(fmt.Sprintf("No handler for slash command '%s'", cmd.Command)))
-		platform.Report(e)
+		platform.ReportError(e)
 		handler = defaultSlashCommandHandler
 	}
 

@@ -20,7 +20,7 @@ func ActionRequestEndpoint(c *gin.Context) {
 
 	err := json.Unmarshal([]byte(c.Request.FormValue("payload")), &peek)
 	if err != nil {
-		platform.Report(err)
+		platform.ReportError(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err.Error()})
 		return
 	}
@@ -29,14 +29,14 @@ func ActionRequestEndpoint(c *gin.Context) {
 		var action ActionRequest
 		err := json.Unmarshal([]byte(c.Request.FormValue("payload")), &action)
 		if err != nil {
-			platform.Report(err)
+			platform.ReportError(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err.Error()})
 			return
 		}
 
 		err = startAction(c, &action)
 		if err != nil {
-			platform.Report(err)
+			platform.ReportError(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err.Error()})
 			return
 		}
@@ -45,19 +45,19 @@ func ActionRequestEndpoint(c *gin.Context) {
 		var submission ViewSubmission
 		err := json.Unmarshal([]byte(c.Request.FormValue("payload")), &submission)
 		if err != nil {
-			platform.Report(err)
+			platform.ReportError(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err.Error()})
 			return
 		}
 
 		err = completeAction(c, &submission)
 		if err != nil {
-			platform.Report(err)
+			platform.ReportError(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err.Error()})
 			return
 		}
 	} else {
-		platform.Report(fmt.Errorf("Unknown action request: '%s'", peek.Type))
+		platform.ReportError(fmt.Errorf("Unknown action request: '%s'", peek.Type))
 	}
 }
 
@@ -91,18 +91,18 @@ func completeAction(c *gin.Context, s *ViewSubmission) error {
 
 // StoreActionCorrelation is a helper to mange correlation keys
 func StoreActionCorrelation(ctx context.Context, action, viewID, teamID string) error {
-	err := platform.Set(ctx, correlationKey(viewID, teamID), action, 1800)
+	err := platform.SetKV(ctx, correlationKey(viewID, teamID), action, 1800)
 	if err != nil {
-		platform.Report(err)
+		platform.ReportError(err)
 	}
 	return err
 }
 
 // LookupActionCorrelation is a helper to mange correlation keys
 func LookupActionCorrelation(ctx context.Context, viewID, teamID string) string {
-	v, err := platform.Get(ctx, correlationKey(viewID, teamID))
+	v, err := platform.GetKV(ctx, correlationKey(viewID, teamID))
 	if err != nil {
-		platform.Report(err)
+		platform.ReportError(err)
 		return ""
 	}
 	return v
