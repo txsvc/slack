@@ -2,6 +2,21 @@ package slack
 
 type (
 
+	// ModalRequest creates a modal dialog as a response to an action request
+	// see https://api.slack.com/methods/views.open#response
+	ModalRequest struct {
+		TriggerID string      `json:"trigger_id"`
+		View      ViewElement `json:"view"`
+	}
+
+	// ModalResponse is the reply to a ModalRequest
+	ModalResponse struct {
+		OK               bool         `json:"ok"`
+		View             *ViewElement `json:"view,omitempty"`
+		Error            string       `json:"error,omitempty"`
+		ResponseMetadata MessageArray `json:"response_metadata,omitempty"`
+	}
+
 	// ViewElement defines a modal view. See https://api.slack.com/surfaces/modals/using#composing_views
 	ViewElement struct {
 		ID                 string              `json:"id,omitempty"`
