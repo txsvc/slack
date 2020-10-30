@@ -190,7 +190,7 @@ func startAction(c *gin.Context, a *ActionRequest) error {
 func completeAction(c *gin.Context, s *ViewSubmission) error {
 	ctx := appengine.NewContext(c.Request)
 
-	action := LookupActionCorrelation(ctx, s.View.ID, s.Team.ID)
+	action := lookupActionCorrelation(ctx, s.View.ID, s.Team.ID)
 	if action == "" {
 		return nil
 	}
