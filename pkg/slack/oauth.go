@@ -116,7 +116,7 @@ func getOAuthToken(ctx context.Context, code string) (*OAuthResponse, error) {
 func UpdateAuthorization(ctx context.Context, clientID, teamName, token, tokenType, scope, appID, botID string) error {
 
 	// find the authorization first
-	a, err := auth.GetAuthorization(ctx, clientID, "slack")
+	a, err := auth.GetAuthorization(ctx, clientID, auth.AuthTypeSlack)
 
 	now := util.Timestamp()
 	if err == nil {
@@ -125,15 +125,15 @@ func UpdateAuthorization(ctx context.Context, clientID, teamName, token, tokenTy
 		a.Updated = now
 	} else {
 		a = &auth.Authorization{
-			ClientID:  clientID,
-			Name:      teamName,
+			ClientID:  clientID, // TeamID
+			Name:      teamName, // Team name
 			Token:     token,
 			TokenType: tokenType,
-			UserID:    appID + "." + botID, // FIXME: does this make sense?
+			UserID:    botID,
 			Scope:     scope,
 			Expires:   0,
 			// internal
-			AuthType: "slack",
+			AuthType: auth.AuthTypeSlack,
 			Created:  now,
 			Updated:  now,
 		}

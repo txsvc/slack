@@ -5,6 +5,7 @@ import (
 	e "errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/net/context"
@@ -15,6 +16,12 @@ import (
 )
 
 type (
+	// StartActionFunc is a callback for starting a action
+	StartActionFunc func(*gin.Context, *ActionRequest) error
+
+	// CompleteActionFunc is a callback for completing an action
+	CompleteActionFunc func(*gin.Context, *ViewSubmission) error
+
 	// ViewSubmission see https://api.slack.com/reference/interaction-payloads/views#view_submission
 	// type == view_submission
 	ViewSubmission struct {
@@ -98,6 +105,10 @@ type (
 	}
 )
 
+// actions callback lookups
+var startActionLookup map[string]StartActionFunc
+var completeActionLookup map[string]CompleteActionFunc
+
 // ActionRequestEndpoint receives callbacks from Slack
 func ActionRequestEndpoint(c *gin.Context) {
 	var peek ActionRequestPeek
@@ -145,10 +156,29 @@ func ActionRequestEndpoint(c *gin.Context) {
 	}
 }
 
+// RegisterStartAction adds a start action handler
+func RegisterStartAction(action string, h StartActionFunc) {
+	startActionLookup[strings.ToLower(action)] = h
+}
+
+// RegisterCompleteAction adds a completion action handler
+func RegisterCompleteAction(action string, h CompleteActionFunc) {
+	completeActionLookup[strings.ToLower(action)] = h
+}
+
+// StoreActionCorrelation is a helper to mange correlation keys
+func StoreActionCorrelation(ctx context.Context, action, viewID, teamID string) error {
+	err := platform.SetKV(ctx, correlationKey(viewID, teamID), strings.ToLower(action), 1800)
+	if err != nil {
+		platform.ReportError(err)
+	}
+	return err
+}
+
 // startAction initiates a dialog with the user
 func startAction(c *gin.Context, a *ActionRequest) error {
 	action := a.CallbackID
-	handler := startActionLookup[action]
+	handler := startActionLookup[strings.ToLower(action)]
 	if handler == nil {
 		return errors.NewOperationError(action, e.New(fmt.Sprintf("No handler for action request '%s'", action)))
 	}
@@ -173,20 +203,9 @@ func completeAction(c *gin.Context, s *ViewSubmission) error {
 	return handler(c, s)
 }
 
-// StoreActionCorrelation is a helper to mange correlation keys
-func StoreActionCorrelation(ctx context.Context, action, viewID, teamID string) error {
-	err := platform.SetKV(ctx, correlationKey(viewID, teamID), action, 1800)
-	if err != nil {
-		platform.ReportError(err)
-	}
-	return err
-}
-
-// LookupActionCorrelation is a helper to mange correlation keys
-func LookupActionCorrelation(ctx context.Context, viewID, teamID string) string {
+func lookupActionCorrelation(ctx context.Context, viewID, teamID string) string {
 	v, err := platform.GetKV(ctx, correlationKey(viewID, teamID))
 	if err != nil {
-		platform.ReportError(err)
 		return ""
 	}
 	return v
