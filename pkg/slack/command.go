@@ -1,13 +1,11 @@
 package slack
 
 import (
-	e "errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/txsvc/commons/pkg/errors"
 	"github.com/txsvc/platform/pkg/platform"
 )
 
@@ -54,7 +52,7 @@ func SlashCmdEndpoint(c *gin.Context) {
 	// dispatch to a handler
 	handler := slashCommandLookup[strings.ToLower(cmd.Command)]
 	if handler == nil {
-		e := errors.NewOperationError(cmd.Command, e.New(fmt.Sprintf("No handler for command '%s'", cmd.Command)))
+		e := fmt.Errorf("No handler for command '%s'", cmd.Command)
 		platform.ReportError(e)
 
 		handler = defaultSlashCommandHandler

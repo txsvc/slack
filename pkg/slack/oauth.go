@@ -2,7 +2,7 @@ package slack
 
 import (
 	"encoding/json"
-	e "errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"google.golang.org/appengine"
 
-	"github.com/txsvc/commons/pkg/errors"
 	"github.com/txsvc/commons/pkg/util"
 	"github.com/txsvc/platform/pkg/platform"
 	"github.com/txsvc/service/pkg/auth"
@@ -62,7 +61,7 @@ func OAuthEndpoint(c *gin.Context) {
 		}
 
 		if teamInfo.OK == false {
-			platform.ReportError(errors.NewOperationError("team.info", e.New(teamInfo.Error)))
+			platform.ReportError(fmt.Errorf("error: %s", teamInfo.Error))
 			c.Redirect(http.StatusTemporaryRedirect, "/error")
 			return
 		}

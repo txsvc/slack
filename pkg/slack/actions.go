@@ -2,7 +2,6 @@ package slack
 
 import (
 	"encoding/json"
-	e "errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,8 +10,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 
-	"github.com/txsvc/commons/pkg/errors"
 	"github.com/txsvc/platform/pkg/platform"
+	s "github.com/txsvc/platform/pkg/services"
 )
 
 type (
@@ -168,7 +167,7 @@ func RegisterCompleteAction(action string, h CompleteActionFunc) {
 
 // StoreActionCorrelation is a helper to mange correlation keys
 func StoreActionCorrelation(ctx context.Context, action, viewID, teamID string) error {
-	err := platform.SetKV(ctx, correlationKey(viewID, teamID), strings.ToLower(action), 1800)
+	err := s.SetKV(ctx, correlationKey(viewID, teamID), strings.ToLower(action), 1800)
 	if err != nil {
 		platform.ReportError(err)
 	}
@@ -180,7 +179,7 @@ func startAction(c *gin.Context, a *ActionRequest) error {
 	action := a.CallbackID
 	handler := startActionLookup[strings.ToLower(action)]
 	if handler == nil {
-		return errors.NewOperationError(action, e.New(fmt.Sprintf("No handler for action request '%s'", action)))
+		return fmt.Errorf(fmt.Sprintf("No handler for action request '%s'", action))
 	}
 
 	return handler(c, a)
@@ -197,14 +196,14 @@ func completeAction(c *gin.Context, s *ViewSubmission) error {
 
 	handler := completeActionLookup[action]
 	if handler == nil {
-		return errors.NewOperationError(action, e.New(fmt.Sprintf("No handler for action response '%s'", action)))
+		return fmt.Errorf("No handler for action response '%s'", action)
 	}
 
 	return handler(c, s)
 }
 
 func lookupActionCorrelation(ctx context.Context, viewID, teamID string) string {
-	v, err := platform.GetKV(ctx, correlationKey(viewID, teamID))
+	v, err := s.GetKV(ctx, correlationKey(viewID, teamID))
 	if err != nil {
 		return ""
 	}
